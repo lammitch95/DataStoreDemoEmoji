@@ -37,6 +37,20 @@ class UserPreferencesRepository(
             preferences[IS_LINEAR_LAYOUT] ?: true
         }
 
+    // Flow to observe the dark mode preference from the DataStore
+    val isDarkMode: Flow<Boolean> = dataStore.data
+        .catch {
+            if (it is IOException) {
+                Log.e(TAG, "Error reading preferences.", it)
+                emit(emptyPreferences())
+            } else {
+                throw it
+            }
+        }
+        .map { preferences ->
+            preferences[IS_DARK_THEME] ?: false
+        }
+
 
     suspend fun saveLayoutPreference(isLinearLayout: Boolean) {
         dataStore.edit { preferences ->
@@ -49,4 +63,5 @@ class UserPreferencesRepository(
             preferences[IS_DARK_THEME] = isDarkTheme
         }
     }
+
 }

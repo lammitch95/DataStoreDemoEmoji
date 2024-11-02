@@ -1,6 +1,7 @@
 package edu.farmingdale.datastoredemo.ui
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -43,6 +44,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import edu.farmingdale.datastoredemo.R
 
 import edu.farmingdale.datastoredemo.data.local.LocalEmojiData
+import edu.farmingdale.datastoredemo.ui.theme.DataStoreDemoTheme
 
 /*
  * Screen level composable
@@ -56,6 +58,7 @@ fun EmojiReleaseApp(
     EmojiScreen(
         uiState = emojiViewModel.uiState.collectAsState().value,
         selectLayout = emojiViewModel::selectLayout,
+        toggleDarkMode = emojiViewModel::toggleDarkMode
     )
 }
 
@@ -63,52 +66,62 @@ fun EmojiReleaseApp(
 @Composable
 private fun EmojiScreen(
     uiState: EmojiReleaseUiState,
-    selectLayout: (Boolean) -> Unit
+    selectLayout: (Boolean) -> Unit,
+    toggleDarkMode: (Boolean) -> Unit
 ) {
     val isLinearLayout = uiState.isLinearLayout
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.top_bar_name)) },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            selectLayout(!isLinearLayout)
+    val isDarkMode = uiState.isDarkMode
+
+    DataStoreDemoTheme(darkTheme = isDarkMode){
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.top_bar_name)) },
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                selectLayout(!isLinearLayout)
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(uiState.toggleIcon),
+                                contentDescription = stringResource(uiState.toggleContentDescription),
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
                         }
-                    ) {
-                        Icon(
-                            painter = painterResource(uiState.toggleIcon),
-                            contentDescription = stringResource(uiState.toggleContentDescription),
-                            tint = MaterialTheme.colorScheme.onBackground
+                        // Toggle dark mode switch
+                        Switch(
+                            checked = isDarkMode,
+                            onCheckedChange = {toggleDarkMode(!isDarkMode)}
                         )
-                    }
 
-
-                },
-                colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.inversePrimary
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.inversePrimary
+                    )
                 )
-            )
-        }
-    ) { innerPadding ->
-        val modifier = Modifier
-            .padding(
-                top = dimensionResource(R.dimen.padding_medium),
-                start = dimensionResource(R.dimen.padding_medium),
-                end = dimensionResource(R.dimen.padding_medium),
-            )
-        if (isLinearLayout) {
-            EmojiReleaseLinearLayout(
-                modifier = modifier.fillMaxWidth(),
-                contentPadding = innerPadding
-            )
-        } else {
-            EmojiReleaseGridLayout(
-                modifier = modifier,
-                contentPadding = innerPadding,
-            )
+            }
+        ) { innerPadding ->
+            val modifier = Modifier
+                .padding(
+                    top = dimensionResource(R.dimen.padding_medium),
+                    start = dimensionResource(R.dimen.padding_medium),
+                    end = dimensionResource(R.dimen.padding_medium),
+                )
+            if (isLinearLayout) {
+                EmojiReleaseLinearLayout(
+                    modifier = modifier.fillMaxWidth(),
+                    contentPadding = innerPadding
+                )
+            } else {
+                EmojiReleaseGridLayout(
+                    modifier = modifier,
+                    contentPadding = innerPadding,
+                )
+            }
         }
     }
+
 }
 
 @Composable
@@ -126,11 +139,17 @@ fun EmojiReleaseLinearLayout(
             items = LocalEmojiData.EmojiList,
             key = { e -> e }
         ) { e ->
+            val emojiIndex = LocalEmojiData.EmojiList.indexOf(e)
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
-                shape = MaterialTheme.shapes.medium
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.clickable {
+                    val emojiName = LocalEmojiData.EmojiName[emojiIndex]
+                    // Display a toast with the emoji name
+                    Toast.makeText(cntxt, emojiName, Toast.LENGTH_SHORT).show()
+                }
             ) {
                     Text(
                         text = e, fontSize = 50.sp,
@@ -151,6 +170,7 @@ fun EmojiReleaseGridLayout(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
+    val cntxt = LocalContext.current
     LazyVerticalGrid(
         modifier = modifier,
         columns = GridCells.Fixed(3),
@@ -162,12 +182,21 @@ fun EmojiReleaseGridLayout(
             items = LocalEmojiData.EmojiList,
             key = { e -> e }
         ) { e ->
+            val emojiIndex = LocalEmojiData.EmojiList.indexOf(e)
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
-                modifier = Modifier.height(110.dp),
-                shape = MaterialTheme.shapes.medium
+                modifier = Modifier
+                    .height(110.dp)
+                    .clickable {
+                        val emojiName = LocalEmojiData.EmojiName[emojiIndex]
+                        // Display a toast with the emoji name
+                        Toast
+                            .makeText(cntxt, emojiName, Toast.LENGTH_SHORT)
+                            .show()
+                    },
+                shape = MaterialTheme.shapes.medium,
             ) {
                 Text(
                     text = e, fontSize = 50.sp,
